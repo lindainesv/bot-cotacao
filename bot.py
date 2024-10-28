@@ -22,12 +22,16 @@ https://documentation.botcity.dev/tutorials/python-automations/web/
 """
 
 
-# Import for the Web Bot
-from botcity.web import WebBot, Browser, By
-from botcity.plugins.csv import BotCSVPlugin
-
 # Import for integration with BotCity Maestro SDK
 from botcity.maestro import *
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.support.ui import WebDriverWait
+from botcity.plugins.csv import BotCSVPlugin
+# Import for the Web Bot
+from botcity.web import By, WebBot
+from selenium import webdriver
+# from selenium.webdriver.edge.service import Service
+from webdriver_manager.microsoft import EdgeChromiumDriverManager
 
 # Disable errors if we are not connected to Maestro
 BotMaestroSDK.RAISE_NOT_CONNECTED = False
@@ -51,34 +55,28 @@ def main():
     # Configure whether or not to run on headless mode
     bot.headless = False
 
-    # Uncomment to change the default Browser to EDGE
-    bot.browser = Browser.EDGE
+    # edge_service = Service(EdgeChromiumDriverManager().install())
+    driver = webdriver.Edge(EdgeChromiumDriverManager().install())
 
-    # Uncomment to set the WebDriver path
-    bot.driver_path = bot.get_resource_abspath("msedgedriver.exe")
-
-    # Opens the link website.
-    bot.browse("https://www.google.com.br")
+    driver.get("https://www.google.com.br")
 
     # Implement here your logic...
     for index, linha in enumerate(dados):
-        print(f"Moeda: {linha['moeda']}")
-        # input()
-        pesquisa = bot.find_element("APjFqb", By.ID, waiting_time=10000)
-        print(f"Pesquisa: {pesquisa}")
+        driver.implicitly_wait(0.5)
+        pesquisa = driver.find_element(By.XPATH, """//*[@id="APjFqb"]""")
         pesquisa.clear()
-        # input()
-        pesquisa.send_keys(f"cotação do {linha['moeda']}")
-        bot.enter()
 
-        cotacao = bot.find_element("""//*[@id="knowledge-currency__updatable-data-column"]/div[1]/div[2]/span[1]""", By.XPATH)
-        print(f"Valor da cotação: {cotacao.text}")
+        driver.implicitly_wait(0.5)
+        pesquisa.send_keys(f"cotação do {linha['moeda']}" + Keys.ENTER)
+        cotacao = driver.find_element(By.XPATH, """//*[@id="knowledge-currency__updatable-data-column"]/div[1]/div[2]/span[1]""")
+        cotacao = cotacao.text
 
-        data = bot.find_element("""//*[@id="knowledge-currency__updatable-data-column"]/div[2]/span""", By.XPATH)
-        print(f"Data da cotação: {data.text}")
+        driver.implicitly_wait(0.5)
+        data = driver.find_element(By.XPATH, """//*[@id="knowledge-currency__updatable-data-column"]/div[2]/span""")
+        data = data.text
 
-        planilha.set_entry('cotacao', index, cotacao.text)
-        planilha.set_entry('data', index, data.text)
+        planilha.set_entry('cotacao', index, cotacao)
+        planilha.set_entry('data', index, data)
 
     planilha.write(bot.get_resource_abspath("moedas.csv"))
 
